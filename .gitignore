@@ -411,3 +411,4 @@ Makefile
 *.vcxproj
 *.vcxproj.filters
 *.slnx
+*.filters

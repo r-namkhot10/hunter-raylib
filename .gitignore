@@ -407,6 +407,7 @@ Makefile
 *.swn
 /build/compile_commands.json
 
+# Generated project files
 *.vcxproj
 *.vcxproj.filters
 *.slnx

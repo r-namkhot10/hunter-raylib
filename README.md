@@ -1,161 +1,129 @@
-# Raylib-Quickstart
-A simple cross platform template for setting up a project with the bleeding edge raylib code.
-Works with C or C++.
+# HUNTER
 
-# Basic Setup
-Download this repository to get started.
+A real-time chase game written in C++ with raylib. Two hunters track you
+across a world larger than the screen — survive 30 seconds to win.
 
-You can download the zip file of the repository from the Green Code button on github. This is the simplest way to get the template to start from.
-Once you have downloaded the template, rename it to your project name.
+This is a real-time remake of my earlier turn-based console game
+([hunter-game](https://github.com/r-namkhot10/hunter-game)). The game logic
+was already solved, so this port was about learning what changes when a game
+stops waiting for input and starts running on a clock.
 
-or
+## Screenshot
 
-Clone the repository with git, from the url
-```
-https://github.com/raylib-extras/raylib-quickstart.git
-```
+<!-- Drag a screenshot or GIF into the GitHub editor here and it uploads automatically -->
+![Gameplay](screenshot.png)
 
-If you are using a command line git client you can use the command below to download and rename the template in one step
-```
-git clone https://github.com/raylib-extras/raylib-quickstart.git [name-for-your-project-here]
-```
+## Features
 
-# Naming projects
-* Replace the placeholder with your desired project name when running the git clone command above.
-* __Do not name your game project 'raylib', it will conflict with the raylib library.__
-* If you have used custom game name with __git clone__, there is no need to rename it again.
+- **Two independent hunters** — each owns its own position and speed, and
+  pursues the player continuously rather than turn by turn
+- **Difficulty scaling** — every 10 seconds both hunters gain speed, up to a cap
+- **Scrolling camera** — the world is 2000×2000 while the window is 1500×900,
+  so the camera follows the player and reveals the world as you explore it
+- **Frame-rate independent movement** — the game plays identically at 30, 60,
+  or 144 FPS
+- **Four game states** — title screen, playing, game over, and win, each with
+  its own screen
 
+## How to Run
 
-## Supported Platforms
-Quickstart supports the main 3 desktop platforms:
-* Windows
-* Linux
-* MacOS
+Requires a C++17 compiler. The project uses
+[raylib-quickstart](https://github.com/raylib-extras/raylib-quickstart), which
+generates the project files for you.
 
-# VSCode Users (all platforms)
-*Note* You must have a compiler toolchain installed in addition to vscode.
+**Visual Studio 2026**
+1. Run `build-VisualStudio2026.bat`
+2. Open the generated `.slnx` file
+3. Press `Ctrl+F5`
 
-1. Download the quickstart
-2. Rename the folder to your game name
-3. Open the folder in VSCode
-4. Run the build task ( CTRL+SHIFT+B or F5 )
-5. You are good to go
+**MinGW-W64**
+1. Run `build-MinGW-W64.bat`
+2. Run `make` in the project root
+3. The executable is in `bin/`
 
-# Windows Users
-There are two compiler toolchains available for windows, MinGW-W64 (a free compiler using GCC), and Microsoft Visual Studio
-## Using MinGW-W64
-* Rename the folder to your game name
-* Double click the `build-MinGW-W64.bat` file
-* CD into the folder in your terminal
-  * if you are using the W64devkit and have not added it to your system path environment variable, you must use the W64devkit.exe terminal, not CMD.exe
-  * If you want to use cmd.exe or any other terminal, please make sure that gcc/mingw-W64 is in your path environment variable.
-* run `make`
-* You are good to go
+## How to Play
 
-### Note on MinGW-64 versions
-Make sure you have a modern version of MinGW-W64 (not mingw).
-The best place to get it is from the W64devkit from
-https://github.com/skeeto/w64devkit/releases
+| Key | Action |
+|-----|--------|
+| `Enter` | start the game |
+| `W` | move up |
+| `A` | move left |
+| `S` | move down |
+| `D` | move right |
+| `Q` | quit |
 
-or the version installed with the raylib installer
+You start at the centre of the world. Hunters spawn at opposite ends and head
+straight for you. You are faster than they are — at first.
 
-#### If you have installed raylib from the installer
-Make sure you have added the path
+**Tip:** the walls are your enemy. Getting cornered costs you the distance you
+spent the whole round building up.
 
-`C:\raylib\w64devkit\bin`
+## Technical Highlights
 
-To your path environment variable so that the compiler that came with raylib can be found.
+- **Custom `Vec2` math struct** with operator overloading (`+`, `-`, `*`),
+  `length()`, `normalize()`, and `distanceTo()` — carried over from the console
+  version and reused unchanged
 
-DO NOT INSTALL ANOTHER MinGW-W64 from another source such as msys2, you don't need it.
+- **`Hunter` class with encapsulated state** — position and speed are private,
+  so each hunter owns its own data. This is what makes per-hunter speeds
+  possible; the earlier version stored one shared speed in `main` and every
+  enemy had to move at the same rate.
 
-## Microsoft Visual Studio 2026
-* Rename the folder to your game name
-* Run `build-VisualStudio2026.bat`
-* double click the `.slnx` file that is generated
-* develop your game
-* you are good to go
+- **Delta-time movement** — every moving thing is measured in pixels per
+  *second*, not per frame:
+  ```cpp
+  position = position + direction * speed * dt;
+  ```
 
-# Linux Users
-* Rename the folder to your game name
-* CD into the build folder
-* run `./premake5 gmake`
-* CD back to the root
-* run `make`
-* you are good to go
+- **`Camera2D` following the player** — world coordinates are separated from
+  screen coordinates, so the world can be far larger than the window. UI is
+  drawn outside `BeginMode2D` so it stays fixed to the screen while the world
+  scrolls underneath.
 
-# MacOS Users
-* Rename the folder to your game name
-* CD into the build folder
-* run `./premake5.osx gmake`
-* CD back to the root
-* run `make`
-* you are good to go
+- **State machine** — instead of breaking out of the loop to end the game, the
+  loop keeps running and only what gets drawn changes:
+  ```cpp
+  enum GameState { WAIT_FOR_START, PLAYING, GAME_OVER, WIN };
+  ```
 
-# Output files
-The built code will be in the bin dir
+- **Fixing the diagonal speed bug** — playtesting revealed I could beat the game
+  reliably by moving diagonally. Holding two keys added full speed to *both*
+  axes, so diagonal movement was √2 ≈ 41% faster than moving straight — fast
+  enough to outrun hunters that were supposed to catch me. The fix was to build
+  an input vector and normalise it before applying speed:
+  ```cpp
+  // Before — diagonal movement was 424 px/s instead of 300
+  if (IsKeyDown(KEY_D)) playerPos.x += speed * dt;
+  if (IsKeyDown(KEY_S)) playerPos.y += speed * dt;
 
-# Working directories and the resources folder
-The example uses a utility function from `path_utils.h` that will find the resources dir and set it as the current working directory. This is very useful when starting out. If you wish to manage your own working directory you can simply remove the call to the function and the header.
+  // After — same speed in every direction
+  Vec2 dir(0.0f, 0.0f);
+  if (IsKeyDown(KEY_D)) dir.x += 1.0f;
+  if (IsKeyDown(KEY_S)) dir.y += 1.0f;
+  dir = dir.normalize();
+  playerPos = playerPos + dir * speed * dt;
+  ```
+  The same `normalize()` I had written for the hunter AI turned out to be the
+  fix. After patching it the game became unwinnable, so I rebalanced the hunter
+  speeds from 300/240 down to 240/200.
 
-# Changing to C++
-Simply rename `src/main.c` to `src/main.cpp` and re-run the steps above and do a clean build.
+- **Temporary on-screen notifications** — a boolean flag plus a countdown timer
+  shows the "hunters are getting faster" message for three seconds and then
+  clears itself, without blocking the game loop.
 
-# Using your own code
-Simply remove `src/main.c` and replace it with your code, and re-run the steps above and do a clean build.
+## About This Project
 
-# Building for other OpenGL targets
-If you need to build for a different OpenGL version than the default (OpenGL 3.3) you can specify an OpenGL version in your premake command line. Just modify the bat file or add the following to your command line
+I built this while learning C++ and raylib. I solve problems myself first and
+ask for hints when I get stuck, and I test every change by playing the game
+rather than only reading the code — which is exactly how the diagonal speed bug
+turned up.
 
-## For OpenGL 1.1
-`--graphics=opengl11`
+The biggest thing I learned porting a turn-based game to real time: in a
+console game the world waits for you, and in a real-time game it doesn't. Every
+number that used to mean "per turn" has to be rethought as "per second."
 
-## For OpenGL 2.1
-`--graphics=opengl21`
+## Credits
 
-## For OpenGL 4.3
-`--graphics=opengl43`
-
-## For OpenGLES 2.0
-`--graphics=opengles2`
-
-## For OpenGLES 3.0
-`--graphics=opengles3`
-
-## For Software Rendering
-`--graphics=software`
-
-*Note*
-Sofware rendering does not work with glfw, use Win32 or SDL platforms
-`--backend=win32`
-
-# Adding External Libraries 
-
-Quickstart is intentionally minimal — it only includes what is required to compile and run a basic raylib project.  
-If you want to use extra libraries, you can add them to the `build/premake5.lua` file yourself using the links function.
-
-You can find the documentation for the links function here https://premake.github.io/docs/links/
-
-### Example: adding the required libraries for tinyfiledialogs on Windows
-tinyfiledialogs requires extra Windows system libraries.
-The premake file uses filters to define options that are platform specific
-https://premake.github.io/docs/Filters/
-
-Using the windows filter adds these libraries only to the windows build.
-```
-filter "system:windows"
-    links {
-        "Comdlg32",
-        "User32",
-        "Ole32",
-        "Shell32"
-    }
-```
-
-### Cross-platform reminder
-If you add a library, make sure to add its required dependencies for all platforms you plan to support (Windows, Linux, MacOS).
-Different libraries will have different dependencies on different platforms.
-
-
-# License
-Raylib-Quickstart by Jeffery Myers is marked with CC0 1.0. To view a copy of this license, visit https://creativecommons.org/publicdomain/zero/1.0/
-
+- [raylib](https://www.raylib.com/) by Ramon Santamaria
+- [raylib-quickstart](https://github.com/raylib-extras/raylib-quickstart)
+  template by Jeffery Myers (CC0)

@@ -10,7 +10,7 @@ stops waiting for input and starts running on a clock.
 
 ## Screenshot
 
-<!-- Drag a screenshot or GIF into the GitHub editor here and it uploads automatically -->
+<img width="1555" height="1017" alt="Screenshot 2026-08-17 010414" src="https://github.com/user-attachments/assets/71fbcf23-1fc2-4506-8b30-c032b410e1a9" />
 ![Gameplay](screenshot.png)
 
 ## Features
